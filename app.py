@@ -68,12 +68,12 @@ if st.session_state.enviado:
         reiniciar()
     st.stop()
 
-nombre = st.text_input("👤 TU NOMBRE COMPLETO:")
+nombre = st.text_input("👤 TU NOMBRE COMPLETO:").strip().upper()
 
 if nombre:
     tabs_main = st.tabs(["⚽ Grupos", "🏅 Podio Final", "💎 Bonus"])
     
-    with st.form("prode_final"):
+    with st.form("prode_final_secure"):
         datos_enviar = []
         
         with tabs_main[0]:
@@ -91,10 +91,10 @@ if nombre:
 
         with tabs_main[1]:
             st.subheader("Seleccioná tu Podio")
-            p1 = st.selectbox("🥇 1° CAMPEÓN (10 pts)", equipos_podio, index=0)
-            p2 = st.selectbox("🥈 2° SUBCAMPEÓN (7 pts)", equipos_podio, index=1)
-            p3 = st.selectbox("🥉 3° PUESTO (5 pts)", equipos_podio, index=2)
-            p4 = st.selectbox("🏅 4° PUESTO (3 pts)", equipos_podio, index=3)
+            p1 = st.selectbox("🥇 1° CAMPEÓN", equipos_podio, index=0)
+            p2 = st.selectbox("🥈 2° SUBCAMPEÓN", equipos_podio, index=1)
+            p3 = st.selectbox("🥉 3° PUESTO", equipos_podio, index=2)
+            p4 = st.selectbox("🏅 4° CUARTO", equipos_podio, index=3)
 
         with tabs_main[2]:
             st.subheader("Bonus Especiales")
@@ -103,20 +103,24 @@ if nombre:
 
         st.divider()
         if st.form_submit_button("💾 GUARDAR PRONÓSTICO COMPLETO"):
-            ahora = datetime.now().strftime("%d/%m/%Y %H:%M")
-            # Agregar Podio y Bonus
-            datos_enviar.extend([
-                [nombre, "PODIO: 1° CAMPEÓN", p1, ""],
-                [nombre, "PODIO: 2° SUBCAMPEÓN", p2, ""],
-                [nombre, "PODIO: 3° TERCERO", p3, ""],
-                [nombre, "PODIO: 4° CUARTO", p4, ""],
-                [nombre, "BONUS: Último gol Arg", b1, ""],
-                [nombre, "BONUS: Primer gol Octavos", b2, ""]
-            ])
-            
-            filas_finales = [f + [ahora] for f in datos_enviar]
-            ws_pronosticos.append_rows(filas_finales)
-            st.session_state.enviado = True
-            st.rerun()
+            # --- VALIDACIÓN DE DUPLICADOS ---
+            # Leemos la columna A del excel
+            lista_nombres = ws_pronosticos.col_values(1)
+            if nombre in lista_nombres:
+                st.error(f"❌ ¡Error! El nombre '{nombre}' ya registró su Prode. No se permiten duplicados.")
+            else:
+                ahora = datetime.now().strftime("%d/%m/%Y %H:%M")
+                datos_enviar.extend([
+                    [nombre, "PODIO: 1° CAMPEÓN", p1, ""],
+                    [nombre, "PODIO: 2° SUBCAMPEÓN", p2, ""],
+                    [nombre, "PODIO: 3° TERCERO", p3, ""],
+                    [nombre, "PODIO: 4° CUARTO", p4, ""],
+                    [nombre, "BONUS: Último gol Arg", b1, ""],
+                    [nombre, "BONUS: Primer gol Octavos", b2, ""]
+                ])
+                filas_finales = [f + [ahora] for f in datos_enviar]
+                ws_pronosticos.append_rows(filas_finales)
+                st.session_state.enviado = True
+                st.rerun()
 else:
-    st.info("Escribí tu nombre para habilitar el fixture completo.")
+    st.info("Escribí tu nombre para habilitar el fixture.")
