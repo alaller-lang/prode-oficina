@@ -8,19 +8,14 @@ import json
 # --- CONFIGURACIÓN ---
 st.set_page_config(page_title="Prode Dunlop 2026", page_icon="🏆", layout="wide")
 
-# --- ESTILO INSTITUCIONAL ---
-st.markdown("""
-    <style>
+# --- ESTILO ---
+st.markdown("""<style>
     .main { background-color: #f5f5f5; }
-    .stButton>button { 
-        background-color: #FFD200 !important; color: black !important; 
-        border-radius: 12px; font-weight: bold; width: 100%; height: 3.5em;
-    }
+    .stButton>button { background-color: #FFD200 !important; color: black !important; border-radius: 12px; font-weight: bold; width: 100%; height: 3.5em; }
     .stTabs [data-baseweb="tab-list"] { flex-wrap: wrap; background-color: #1a1a1a; padding: 10px; border-radius: 10px; }
     .stTabs [data-baseweb="tab"] { color: white; }
     .stTabs [aria-selected="true"] { background-color: #FFD200 !important; color: black !important; }
-    </style>
-    """, unsafe_allow_html=True)
+</style>""", unsafe_allow_html=True)
 
 # --- CONEXIÓN ---
 @st.cache_resource
@@ -28,13 +23,12 @@ def conectar_hojas():
     scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
     info_claves = json.loads(st.secrets["gcp_service_account"])
     creds = Credentials.from_service_account_info(info_claves, scopes=scope)
-    client = gspread.authorize(creds)
-    ss = client.open("Prode_Mundial_2026")
+    ss = gspread.authorize(creds).open("Prode_Mundial_2026")
     return ss.worksheet("pronosticos"), ss.worksheet("resultados_reales")
 
 ws_pronos, ws_reales = conectar_hojas()
 
-# --- DATOS FIXTURE ---
+# --- FIXTURE ---
 fixture_datos = {
     "Grupo A": [{"id":"A1","L":"🇲🇽 México","V":"🇿🇦 Sudáfrica"},{"id":"A2","L":"🇰🇷 Corea Sur","V":"🇨🇿 Rep. Checa"},{"id":"A3","L":"🇲🇽 México","V":"🇰🇷 Corea Sur"},{"id":"A4","L":"🇨🇿 Rep. Checa","V":"🇿🇦 Sudáfrica"},{"id":"A5","L":"🇿🇦 Sudáfrica","V":"🇰🇷 Corea Sur"},{"id":"A6","L":"🇨🇿 Rep. Checa","V":"🇲🇽 México"}],
     "Grupo B": [{"id":"B1","L":"🇨🇦 Canadá","V":"🇧🇦 Bosnia"},{"id":"B2","L":"🇶🇦 Catar","V":"🇨🇭 Suiza"},{"id":"B3","L":"🇨🇦 Canadá","V":"🇶🇦 Catar"},{"id":"B4","L":"🇨🇭 Suiza","V":"🇧🇦 Bosnia"},{"id":"B5","L":"🇧🇦 Bosnia","V":"🇶🇦 Catar"},{"id":"B6","L":"🇨🇭 Suiza","V":"🇨🇦 Canadá"}],
@@ -51,16 +45,11 @@ fixture_datos = {
 }
 equipos_podio = sorted(["Argentina", "Brasil", "México", "España", "Francia", "Alemania", "Inglaterra", "Uruguay", "Portugal", "Países Bajos", "Bélgica", "Italia", "EE. UU.", "Canadá", "Marruecos", "Senegal", "Japón", "Ecuador", "Colombia", "Paraguay", "Croacia", "Suiza", "Corea del Sur", "Argelia"])
 
-# --- LÓGICA DE RANKING ---
+# --- RANKING ---
 def obtener_ranking():
     try:
         raw_p = ws_pronos.get_all_values()
         raw_r = ws_reales.get_all_values()
         if len(raw_p) < 2 or len(raw_r) < 2: return None
-        
-        df_p = pd.DataFrame(raw_p[1:], columns=['Nombre', 'Partido', 'GL_u', 'GV_u', 'Fecha'])
-        df_r = pd.DataFrame(raw_r[1:], columns=['Partido', 'GL_r', 'GV_r'])
-        
-        # Filtramos solo lo que contenga "vs" (partidos de grupos)
-        df_partidos = df_p[df_p['Partido'].str.contains("vs", na=False)].copy()
-        for col in ['GL_u', 'GV_u']: df_partidos[col] = pd.to_numeric(df_partidos[col], errors='coerce').fillna(
+        df_p = pd.DataFrame(raw_p[1:], columns=['Nombre','Partido','GL_u','GV_u','Fecha'])
+        df_r = pd.DataFrame(raw_
