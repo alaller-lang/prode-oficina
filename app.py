@@ -17,83 +17,88 @@ st.markdown("""
         color: black !important; 
         border-radius: 10px;
         font-weight: bold;
+        width: 100%;
+        height: 3.5em;
+        font-size: 18px;
     }
-    h1 { color: #1a1a1a; font-family: 'Arial Black'; }
+    h1 { color: #1a1a1a; font-family: 'Arial Black'; text-align: center; }
+    .stTabs [data-baseweb="tab-list"] { gap: 8px; flex-wrap: wrap; }
+    .stTabs [data-baseweb="tab"] {
+        background-color: #e0e0e0;
+        border-radius: 5px;
+        padding: 8px 15px;
+    }
+    .stTabs [aria-selected="true"] { background-color: #FFD200; font-weight: bold; }
     </style>
     """, unsafe_allow_html=True)
 
 # --- CONEXIÓN A GOOGLE SHEETS ---
+@st.cache_resource
 def conectar_hoja():
     scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-    try:
-        info_claves = json.loads(st.secrets["gcp_service_account"])
-        creds = Credentials.from_service_account_info(info_claves, scopes=scope)
-        client = gspread.authorize(creds)
-        return client.open("Prode_Mundial_2026")
-    except Exception as e:
-        st.error("Error de conexión con las llaves.")
-        st.stop()
+    info_claves = json.loads(st.secrets["gcp_service_account"])
+    creds = Credentials.from_service_account_info(info_claves, scopes=scope)
+    client = gspread.authorize(creds)
+    return client.open("Prode_Mundial_2026").worksheet("pronosticos")
 
-sheet = conectar_hoja()
-ws_pronosticos = sheet.worksheet("pronosticos")
+ws_pronosticos = conectar_hoja()
 
-# --- FIXTURE REAL COMPLETO (Simplificado para el ejemplo) ---
-# Aquí podés agregar todos los grupos siguiendo esta estructura:
+# --- DATOS DEL FIXTURE COMPLETO ---
 fixture_datos = {
-    "Grupo A": [
-        {"id": "A1", "L": "🇲🇽 México", "V": "🇿🇦 Sudáfrica"},
-        {"id": "A2", "L": "🇰🇷 Corea Sur", "V": "🇨🇿 Rep. Checa"},
-        {"id": "A3", "L": "🇲🇽 México", "V": "🇰🇷 Corea Sur"},
-        {"id": "A4", "L": "🇨🇿 Rep. Checa", "V": "🇿🇦 Sudáfrica"}
-    ],
-    "Grupo J (Arg)": [
-        {"id": "J1", "L": "🇦🇷 Argentina", "V": "🇩🇿 Argelia"},
-        {"id": "J2", "L": "🇦🇹 Austria", "V": "🇯🇴 Jordania"},
-        {"id": "J3", "L": "🇦🇷 Argentina", "V": "🇦🇹 Austria"},
-        {"id": "J4", "L": "🇯🇴 Jordania", "V": "🇩🇿 Argelia"}
-    ]
+    "Grupo A": [{"id": "A1", "L": "🇲🇽 México", "V": "🇿🇦 Sudáfrica"}, {"id": "A2", "L": "🇰🇷 Corea Sur", "V": "🇨🇿 Rep. Checa"}],
+    "Grupo B": [{"id": "B1", "L": "🇨🇦 Canadá", "V": "🇧🇦 Bosnia"}, {"id": "B2", "L": "🇶🇦 Catar", "V": "🇨🇭 Suiza"}],
+    "Grupo C": [{"id": "C1", "L": "🇧🇷 Brasil", "V": "🇲🇦 Marruecos"}, {"id": "C2", "L": "🇭🇹 Haití", "V": "🏴󠁧󠁢󠁳󠁣󠁴󠁿 Escocia"}],
+    "Grupo D": [{"id": "D1", "L": "🇺🇸 EE. UU.", "V": "🇵🇾 Paraguay"}, {"id": "D2", "L": "🇦🇺 Australia", "V": "🇹🇷 Turquía"}],
+    "Grupo E": [{"id": "E1", "L": "🇩🇪 Alemania", "V": "🇨🇼 Curazao"}, {"id": "E2", "L": "🇨🇮 C. Marfil", "V": "🇪🇨 Ecuador"}],
+    "Grupo F": [{"id": "F1", "L": "🇳🇱 P. Bajos", "V": "🇯🇵 Japón"}, {"id": "F2", "L": "🇸🇪 Suecia", "V": "🇹🇳 Túnez"}],
+    "Grupo G": [{"id": "G1", "L": "🇧🇪 Bélgica", "V": "🇪🇬 Egipto"}, {"id": "G2", "L": "🇮🇷 Irán", "V": "🇳🇿 N. Zelanda"}],
+    "Grupo H": [{"id": "H1", "L": "🇪🇸 España", "V": "🇨🇻 Cabo Verde"}, {"id": "H2", "L": "🇺🇾 Uruguay", "V": "🇸🇦 A. Saudí"}],
+    "Grupo I": [{"id": "I1", "L": "🇫🇷 Francia", "V": "🇸🇳 Senegal"}, {"id": "I2", "L": "🇮🇶 Irak", "V": "🇳🇴 Noruega"}],
+    "Grupo J": [{"id": "J1", "L": "🇦🇷 Argentina", "V": "🇩🇿 Argelia"}, {"id": "J2", "L": "🇦🇹 Austria", "V": "🇯🇴 Jordania"}],
+    "Grupo K": [{"id": "K1", "L": "🇵🇹 Portugal", "V": "🇨🇩 RD Congo"}, {"id": "K2", "L": "🇺🇿 Uzbekistán", "V": "🇨🇴 Colombia"}],
+    "Grupo L": [{"id": "L1", "L": "🏴󠁧󠁢󠁥󠁮󠁧󠁿 Inglaterra", "V": "🇭🇷 Croacia"}, {"id": "L2", "L": "🇬🇭 Ghana", "V": "🇵🇦 Panamá"}]
 }
 
 # --- INTERFAZ ---
-# Logo de Dunlop (URL oficial)
-st.image("https://upload.wikimedia.org/wikipedia/commons/3/3d/Dunlop_Logo.svg", width=150)
-st.title("🏆 PRODE MUNDIAL 2026")
+col_logo, col_title = st.columns([1, 4])
+with col_logo:
+    st.image("https://upload.wikimedia.org/wikipedia/commons/3/3d/Dunlop_Logo.svg", width=120)
+with col_title:
+    st.title("PRODE OFICIAL DUNLOP 2026")
 
-nombre = st.text_input("👤 TU NOMBRE Y APELLIDO:")
+nombre = st.text_input("👤 TU NOMBRE Y APELLIDO:", placeholder="Ej: Juan Perez")
 
 if nombre:
+    st.markdown(f"### Hola **{nombre}**! Completá tus resultados por grupo:")
+    
     tab_list = st.tabs(list(fixture_datos.keys()))
     
-    with st.form("form_prode"):
-        todos_los_resultados = []
+    with st.form("form_completo"):
+        resultados_totales = []
         
-        for i, grupo in enumerate(fixture_datos.keys()):
+        for i, (grupo, partidos) in enumerate(fixture_datos.items()):
             with tab_list[i]:
                 st.subheader(f"Partidos del {grupo}")
-                for m in fixture_datos[grupo]:
+                for m in partidos:
                     col1, col2, col3, col4, col5 = st.columns([3, 1, 0.5, 1, 3])
                     with col1: st.write(f"**{m['L']}**")
-                    with col2: res_l = st.number_input("Goles", min_value=0, step=1, key=f"l_{m['id']}", label_visibility="collapsed")
+                    with col2: r_l = st.number_input("G", min_value=0, max_value=15, step=1, key=f"l_{m['id']}", label_visibility="collapsed")
                     with col3: st.write("vs")
-                    with col4: res_v = st.number_input("Goles", min_value=0, step=1, key=f"v_{m['id']}", label_visibility="collapsed")
+                    with col4: r_v = st.number_input("G", min_value=0, max_value=15, step=1, key=f"v_{m['id']}", label_visibility="collapsed")
                     with col5: st.write(f"**{m['V']}**")
-                    todos_los_resultados.append([nombre, f"{m['L']} vs {m['V']}", res_l, res_v])
+                    resultados_totales.append([nombre, f"{m['L']} vs {m['V']}", r_l, r_v])
 
         st.divider()
-        enviar = st.form_submit_button("💾 GUARDAR TODOS MIS PRONÓSTICOS")
+        enviar = st.form_submit_button("💾 GUARDAR TODOS LOS GRUPOS")
 
         if enviar:
             ahora = datetime.now().strftime("%d/%m/%Y %H:%M")
-            filas_a_guardar = [fila + [ahora] for fila in todos_los_resultados]
+            filas_finales = [f + [ahora] for f in resultados_totales]
             try:
-                ws_pronosticos.append_rows(filas_a_guardar)
-                st.success(f"¡Hecho {nombre}! Tus pronósticos se guardaron en el Excel.")
+                ws_pronosticos.append_rows(filas_finales)
+                st.success(f"¡Brillante {nombre}! Se guardaron {len(filas_finales)} partidos.")
                 st.balloons()
-            except Exception as e:
-                st.error(f"Error al guardar: {e}")
+            except:
+                st.error("Error al guardar. Verificá tu conexión.")
 else:
-    st.info("👈 Por favor, escribí tu nombre arriba para empezar a cargar.")
-
-st.sidebar.write("---")
-st.sidebar.image("https://www.dunlop.com/wp-content/themes/dunlop/img/dunlop-logo.png", width=100)
-st.sidebar.write("Prode Dunlop v1.0")
+    st.warning("👈 Por favor, escribí tu nombre arriba para empezar.")
