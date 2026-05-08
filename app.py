@@ -8,48 +8,85 @@ import json
 # --- CONFIGURACIÓN ---
 st.set_page_config(page_title="Prode Dunlop 2026", page_icon="🏆", layout="wide")
 
-# --- ESTILO ---
-st.markdown("""<style>
-    .main { background-color: #f5f5f5; }
-    .stButton>button { background-color: #FFD200 !important; color: black !important; border-radius: 12px; font-weight: bold; width: 100%; height: 3.5em; }
-    .stTabs [data-baseweb="tab-list"] { flex-wrap: wrap; background-color: #1a1a1a; padding: 10px; border-radius: 10px; }
-    .stTabs [data-baseweb="tab"] { color: white; }
-    .stTabs [aria-selected="true"] { background-color: #FFD200 !important; color: black !important; }
-</style>""", unsafe_allow_html=True)
-
 # --- CONEXIÓN ---
 @st.cache_resource
-def conectar_hojas():
-    scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-    info_claves = json.loads(st.secrets["gcp_service_account"])
-    creds = Credentials.from_service_account_info(info_claves, scopes=scope)
+def conectar():
+    info = json.loads(st.secrets["gcp_service_account"])
+    creds = Credentials.from_service_account_info(info, scopes=["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"])
     ss = gspread.authorize(creds).open("Prode_Mundial_2026")
     return ss.worksheet("pronosticos"), ss.worksheet("resultados_reales")
 
-ws_pronos, ws_reales = conectar_hojas()
+ws_p, ws_r = conectar()
 
-# --- FIXTURE ---
-fixture_datos = {
-    "Grupo A": [{"id":"A1","L":"🇲🇽 México","V":"🇿🇦 Sudáfrica"},{"id":"A2","L":"🇰🇷 Corea Sur","V":"🇨🇿 Rep. Checa"},{"id":"A3","L":"🇲🇽 México","V":"🇰🇷 Corea Sur"},{"id":"A4","L":"🇨🇿 Rep. Checa","V":"🇿🇦 Sudáfrica"},{"id":"A5","L":"🇿🇦 Sudáfrica","V":"🇰🇷 Corea Sur"},{"id":"A6","L":"🇨🇿 Rep. Checa","V":"🇲🇽 México"}],
-    "Grupo B": [{"id":"B1","L":"🇨🇦 Canadá","V":"🇧🇦 Bosnia"},{"id":"B2","L":"🇶🇦 Catar","V":"🇨🇭 Suiza"},{"id":"B3","L":"🇨🇦 Canadá","V":"🇶🇦 Catar"},{"id":"B4","L":"🇨🇭 Suiza","V":"🇧🇦 Bosnia"},{"id":"B5","L":"🇧🇦 Bosnia","V":"🇶🇦 Catar"},{"id":"B6","L":"🇨🇭 Suiza","V":"🇨🇦 Canadá"}],
-    "Grupo C": [{"id":"C1","L":"🇧🇷 Brasil","V":"🇲🇦 Marruecos"},{"id":"C2","L":"🇭🇹 Haití","V":"🏴󠁧󠁢󠁳󠁣󠁴󠁿 Escocia"},{"id":"C3","L":"🇧🇷 Brasil","V":"🇭🇹 Haití"},{"id":"C4","L":"🏴󠁧󠁢󠁳󠁣󠁴󠁿 Escocia","V":"🇲🇦 Marruecos"},{"id":"C5","L":"🇲🇦 Marruecos","V":"🇭🇹 Haití"},{"id":"C6","L":"🏴󠁧󠁢󠁳󠁣󠁴󠁿 Escocia","V":"🇧🇷 Brasil"}],
-    "Grupo D": [{"id":"D1","L":"🇺🇸 EE. UU.","V":"🇵🇾 Paraguay"},{"id":"D2","L":"🇦🇺 Australia","V":"🇹🇷 Turquía"},{"id":"D3","L":"🇺🇸 EE. UU.","V":"🇦🇺 Australia"},{"id":"D4","L":"🇹🇷 Turquía","V":"🇵🇾 Paraguay"},{"id":"D5","L":"🇵🇾 Paraguay","V":"🇦🇺 Australia"},{"id":"D6","L":"🇹🇷 Turquía","V":"🇺🇸 EE. UU."}],
-    "Grupo E": [{"id":"E1","L":"🇩🇪 Alemania","V":"🇨🇼 Curazao"},{"id":"E2","L":"🇨🇮 C. Marfil","V":"🇪🇨 Ecuador"},{"id":"E3","L":"🇩🇪 Alemania","V":"🇨🇮 C. Marfil"},{"id":"E4","L":"🇪🇨 Ecuador","V":"🇨🇼 Curazao"},{"id":"E5","L":"🇨🇼 Curazao","V":"🇨🇮 C. Marfil"},{"id":"E6","L":"🇪🇨 Ecuador","V":"🇩🇪 Alemania"}],
-    "Grupo F": [{"id":"F1","L":"🇳🇱 P. Bajos","V":"🇯🇵 Japón"},{"id":"F2","L":"🇸🇪 Suecia","V":"🇹🇳 Túnez"},{"id":"F3","L":"🇳🇱 P. Bajos","V":"🇸🇪 Suecia"},{"id":"F4","L":"🇹🇳 Túnez","V":"🇯🇵 Japón"},{"id":"F5","L":"🇯🇵 Japón","V":"🇸🇪 Suecia"},{"id":"F6","L":"🇹🇳 Túnez","V":"🇳🇱 P. Bajos"}],
-    "Grupo G": [{"id":"G1","L":"🇧🇪 Bélgica","V":"🇪🇬 Egipto"},{"id":"G2","L":"🇮🇷 Irán","V":"🇳🇿 N. Zelanda"},{"id":"G3","L":"🇧🇪 Bélgica","V":"🇮🇷 Irán"},{"id":"G4","L":"🇳🇿 N. Zelanda","V":"🇪🇬 Egipto"},{"id":"G5","L":"🇪🇬 Egipto","V":"🇮🇷 Irán"},{"id":"G6","L":"🇳🇿 N. Zelanda","V":"🇧🇪 Bélgica"}],
-    "Grupo H": [{"id":"H1","L":"🇪🇸 España","V":"🇨🇻 Cabo Verde"},{"id":"H2","L":"🇺🇾 Uruguay","V":"🇸🇦 A. Saudí"},{"id":"H3","L":"🇪🇸 España","V":"🇺🇾 Uruguay"},{"id":"H4","L":"🇸🇦 A. Saudí","V":"🇨🇻 Cabo Verde"},{"id":"H5","L":"🇨🇻 Cabo Verde","V":"🇺🇾 Uruguay"},{"id":"H6","L":"🇸🇦 A. Saudí","V":"🇪🇸 España"}],
-    "Grupo I": [{"id":"I1","L":"🇫🇷 Francia","V":"🇸🇳 Senegal"},{"id":"I2","L":"🇮🇶 Irak","V":"🇳🇴 Noruega"},{"id":"I3","L":"🇫🇷 Francia","V":"🇮🇶 Irak"},{"id":"I4","L":"🇳🇴 Noruega","V":"🇸🇳 Senegal"},{"id":"I5","L":"🇸🇳 Senegal","V":"🇮🇶 Irak"},{"id":"I6","L":"🇳🇴 Noruega","V":"🇫🇷 Francia"}],
-    "Grupo J": [{"id":"J1","L":"🇦🇷 Argentina","V":"🇩🇿 Argelia"},{"id":"J2","L":"🇦🇹 Austria","V":"🇯🇴 Jordania"},{"id":"J3","L":"🇦🇷 Argentina","V":"🇦🇹 Austria"},{"id":"J4","L":"🇯🇴 Jordania","V":"🇩🇿 Argelia"},{"id":"J5","L":"🇩🇿 Argelia","V":"🇦🇹 Austria"},{"id":"J6","L":"🇯🇴 Jordania","V":"🇦🇷 Argentina"}],
-    "Grupo K": [{"id":"K1","L":"🇵🇹 Portugal","V":"🇨🇩 RD Congo"},{"id":"K2","L":"🇺🇿 Uzbekistán","V":"🇨🇴 Colombia"},{"id":"K3","L":"🇵🇹 Portugal","V":"🇺🇿 Uzbekistán"},{"id":"K4","L":"🇨🇴 Colombia","V":"🇨🇩 RD Congo"},{"id":"K5","L":"🇨🇩 RD Congo","V":"🇺🇿 Uzbekistán"},{"id":"K6","L":"🇨🇴 Colombia","V":"🇵🇹 Portugal"}],
-    "Grupo L": [{"id":"L1","L":"🏴󠁧󠁢󠁥󠁮󠁧󠁿 Inglaterra","V":"🇭🇷 Croacia"},{"id":"L2","L":"🇬🇭 Ghana","V":"🇵🇦 Panamá"},{"id":"L3","L":"🏴󠁧󠁢󠁥󠁮󠁧󠁿 Inglaterra","V":"🇬🇭 Ghana"},{"id":"L4","L":"🇵🇦 Panamá","V":"🇭🇷 Croacia"},{"id":"L5","L":"🇭🇷 Croacia","V":"🇬🇭 Ghana"},{"id":"L6","L":"🇵🇦 Panamá","V":"🏴󠁧󠁢󠁥󠁮󠁧󠁿 Inglaterra"}]
+# --- DATOS (LISTA CORTA PARA EVITAR CORTES) ---
+grupos = {
+    "A": ["🇲🇽 México vs 🇿🇦 Sudáfrica", "🇰🇷 Corea Sur vs 🇨🇿 Rep. Checa"],
+    "J": ["🇦🇷 Argentina vs 🇩🇿 Argelia", "🇦🇹 Austria vs 🇯🇴 Jordania"]
 }
-equipos_podio = sorted(["Argentina", "Brasil", "México", "España", "Francia", "Alemania", "Inglaterra", "Uruguay", "Portugal", "Países Bajos", "Bélgica", "Italia", "EE. UU.", "Canadá", "Marruecos", "Senegal", "Japón", "Ecuador", "Colombia", "Paraguay", "Croacia", "Suiza", "Corea del Sur", "Argelia"])
+equipos = sorted(["Argentina", "Brasil", "México", "España", "Francia", "Uruguay", "Alemania"])
 
 # --- RANKING ---
-def obtener_ranking():
+def get_ranking():
     try:
-        raw_p = ws_pronos.get_all_values()
-        raw_r = ws_reales.get_all_values()
-        if len(raw_p) < 2 or len(raw_r) < 2: return None
-        df_p = pd.DataFrame(raw_p[1:], columns=['Nombre','Partido','GL_u','GV_u','Fecha'])
-        df_r = pd.DataFrame(raw_
+        p, r = ws_p.get_all_values(), ws_r.get_all_values()
+        if len(p)<2 or len(r)<2: return None
+        dfp = pd.DataFrame(p[1:], columns=['Nombre','Partido','GLu','GVu','Fecha'])
+        dfr = pd.DataFrame(r[1:], columns=['Partido','GLr','GVr'])
+        dfp = dfp[dfp['Partido'].str.contains("vs")].copy()
+        for c in ['GLu','GVu','GLr','GVr']: 
+            if c in dfp.columns: dfp[c] = pd.to_numeric(dfp[c], errors='coerce')
+            if c in dfr.columns: dfr[c] = pd.to_numeric(dfr[c], errors='coerce')
+        dfm = dfp.merge(dfr, on="Partido")
+        def pts(x):
+            if x['GLu']==x['GLr'] and x['GVu']==x['GVr']: return 3
+            su, sr = (x['GLu']>x['GVu'])-(x['GLu']<x['GVu']), (x['GLr']>x['GVr'])-(x['GLr']<x['GVr'])
+            return 1 if su==sr else 0
+        dfm['Pts'] = dfm.apply(pts, axis=1)
+        return dfm.groupby('Nombre')['Pts'].sum().reset_index().sort_values('Pts', ascending=False)
+    except: return None
+
+# --- NAVEGACIÓN ---
+opc = st.sidebar.radio("MENÚ", ["📝 Cargar", "📊 Ranking", "⚙️ Admin"])
+
+if opc == "📝 Cargar":
+    if st.session_state.get('ok'):
+        st.success("¡Guardado!"); st.button("Otro", on_click=lambda: st.session_state.update({'ok':False}))
+        st.stop()
+    nom = st.text_input("NOMBRE:").upper()
+    if nom:
+        with st.form("f"):
+            res = []
+            t1, t2 = st.tabs(["Partidos", "Finales"])
+            with t1:
+                for g, ps in grupos.items():
+                    st.write(f"**Grupo {g}**")
+                    for p in ps:
+                        c1, c2, c3, c4, c5 = st.columns([3,1,0.5,1,3])
+                        with c1: st.write(p.split(" vs ")[0])
+                        with c2: gl = st.number_input("G",0,15,key=f"l_{p}")
+                        with c3: st.write("v")
+                        with c4: gv = st.number_input("G",0,15,key=f"v_{p}")
+                        with c5: st.write(p.split(" vs ")[1])
+                        res.append([nom, p, gl, gv])
+            with t2:
+                p1 = st.selectbox("Campeón", equipos)
+                b1 = st.text_input("Último gol ARG:")
+            if st.form_submit_button("GUARDAR"):
+                h = datetime.now().strftime("%Y-%m-%d %H:%M")
+                res.extend([[nom,"P1",p1,""],[nom,"B1",b1,""]])
+                ws_p.append_rows([fila+[h] for fila in res])
+                st.session_state.ok = True; st.rerun()
+
+elif opc == "📊 Ranking":
+    rk = get_ranking()
+    if rk is not None: st.table(rk)
+    else: st.info("Sin datos.")
+
+elif opc == "⚙️ Admin":
+    pw = st.text_input("Clave:", type="password")
+    if pw == "DUNLOP2026":
+        with st.form("ad"):
+            p = st.selectbox("Partido:", [x for g in grupos.values() for x in g])
+            l, v = st.number_input("L",0,15), st.number_input("V",0,15)
+            if st.form_submit_button("OK"):
+                ws_r.append_row([p, l, v]); st.success("Cargado")
