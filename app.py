@@ -8,7 +8,7 @@ import json
 # --- CONFIGURACIÓN ---
 st.set_page_config(page_title="Prode Dunlop 2026", page_icon="🏆", layout="wide")
 
-# --- ESTILO DUNLOP ---
+# --- ESTILO ---
 st.markdown("""
     <style>
     .main { background-color: #f5f5f5; }
@@ -34,7 +34,7 @@ def conectar_hojas():
 
 ws_pronos, ws_reales = conectar_hojas()
 
-# --- DATOS (72 PARTIDOS) ---
+# --- DATOS FIXTURE ---
 fixture_datos = {
     "Grupo A": [{"id":"A1","L":"🇲🇽 México","V":"🇿🇦 Sudáfrica"},{"id":"A2","L":"🇰🇷 Corea Sur","V":"🇨🇿 Rep. Checa"},{"id":"A3","L":"🇲🇽 México","V":"🇰🇷 Corea Sur"},{"id":"A4","L":"🇨🇿 Rep. Checa","V":"🇿🇦 Sudáfrica"},{"id":"A5","L":"🇿🇦 Sudáfrica","V":"🇰🇷 Corea Sur"},{"id":"A6","L":"🇨🇿 Rep. Checa","V":"🇲🇽 México"}],
     "Grupo B": [{"id":"B1","L":"🇨🇦 Canadá","V":"🇧🇦 Bosnia"},{"id":"B2","L":"🇶🇦 Catar","V":"🇨🇭 Suiza"},{"id":"B3","L":"🇨🇦 Canadá","V":"🇶🇦 Catar"},{"id":"B4","L":"🇨🇭 Suiza","V":"🇧🇦 Bosnia"},{"id":"B5","L":"🇧🇦 Bosnia","V":"🇶🇦 Catar"},{"id":"B6","L":"🇨🇭 Suiza","V":"🇨🇦 Canadá"}],
@@ -51,51 +51,61 @@ fixture_datos = {
 }
 equipos_podio = sorted(["Argentina", "Brasil", "México", "España", "Francia", "Alemania", "Inglaterra", "Uruguay", "Portugal", "Países Bajos", "Bélgica", "Italia", "EE. UU.", "Canadá", "Marruecos", "Senegal", "Japón", "Ecuador", "Colombia", "Paraguay", "Croacia", "Suiza", "Corea del Sur", "Argelia"])
 
-# --- LÓGICA DE RANKING ---
+# --- LÓGICA DE RANKING MEJORADA ---
 def obtener_ranking():
-    data_p = ws_pronos.get_all_records()
-    data_r = ws_reales.get_all_records()
-    if not data_p or not data_r: return None
-    
-    df_p = pd.DataFrame(data_p)
-    df_r = pd.DataFrame(data_r)
-    
-    # Solo tomamos filas que sean de "Partidos" (ignorar Podio/Bonus para el ranking de fase de grupos)
-    df_p = df_p[df_p['Partido'].str.contains("vs", na=False)]
-    
-    # Cambiamos nombres para unir
-    df_p.rename(columns={'Goles Local':'GL_u', 'Goles Visitante':'GV_u', 'Nombre':'Nombre'}, inplace=True)
-    df_r.rename(columns={'Goles Local':'GL_r', 'Goles Visitante':'GV_r'}, inplace=True)
-    
-    df_m = df_p.merge(df_r, on="Partido")
-    
-    def calcular(row):
-        # Exacto: 3 pts
-        if row['GL_u'] == row['GL_r'] and row['GV_u'] == row['GV_r']: return 3
-        # Ganador/Empate: 1 pt
-        res_u = (row['GL_u'] > row['GV_u']) - (row['GL_u'] < row['GV_u'])
-        res_r = (row['GL_r'] > row['GV_r']) - (row['GL_r'] < row['GV_r'])
-        return 1 if res_u == res_r else 0
+    try:
+        # Traemos todas las filas, sin depender de los nombres de los encabezados
+        data_p = ws_pronos.get_all_values()
+        data_r = ws_reales.get_all_values()
+        
+        if len(data_p) < 2 or len(data_r) < 2: return None
+        
+        # Convertimos a DataFrame usando la primera fila como nombres
+        df_p = pd.DataFrame(data_p[1:], columns=data_p[0])
+        df_r = pd.DataFrame(data_r[1:], columns=data_r[0])
+        
+        # Limpieza de nombres de columnas (quitar espacios locos)
+        df_p.columns = df_p.columns.str.strip()
+        df_r.columns = df_r.columns.str.strip()
 
-    df_m['Pts'] = df_m.apply(calcular, axis=1)
-    return df_m.groupby('Nombre')['Pts'].sum().reset_index().sort_values('Pts', ascending=False)
+        # Filtrar solo partidos
+        df_p = df_p[df_p['Partido'].str.contains("vs", na=False)].copy()
+        
+        # Asegurar que los goles sean números
+        df_p['Goles Local'] = pd.to_numeric(df_p['Goles Local'], errors='coerce').fillna(0)
+        df_p['Goles Visitante'] = pd.to_numeric(df_p['Goles Visitante'], errors='coerce').fillna(0)
+        df_r['Goles Local'] = pd.to_numeric(df_r['Goles Local'], errors='coerce').fillna(0)
+        df_r['Goles Visitante'] = pd.to_numeric(df_r['Goles Visitante'], errors='coerce').fillna(0)
 
-# --- MENU LATERAL ---
+        df_m = df_p.merge(df_r, on="Partido", suffixes=('_u', '_r'))
+        
+        def calcular(row):
+            if row['Goles Local_u'] == row['Goles Local_r'] and row['Goles Visitante_u'] == row['Goles Visitante_r']:
+                return 3
+            res_u = (row['Goles Local_u'] > row['Goles Visitante_u']) - (row['Goles Local_u'] < row['Goles Visitante_u'])
+            res_r = (row['Goles Local_r'] > row['Goles Visitante_r']) - (row['Goles Local_r'] < row['Goles Visitante_r'])
+            return 1 if res_u == res_r else 0
+
+        df_m['Pts'] = df_m.apply(calcular, axis=1)
+        res = df_m.groupby('Nombre')['Pts'].sum().reset_index().sort_values('Pts', ascending=False)
+        return res
+    except Exception as e:
+        return f"Error en datos: {e}"
+
+# --- MENU ---
 with st.sidebar:
     st.image("https://upload.wikimedia.org/wikipedia/commons/3/3d/Dunlop_Logo.svg", width=120)
     opcion = st.radio("MENÚ", ["📝 Cargar mi Prode", "📊 Ranking en Vivo", "⚙️ Admin"])
 
-# --- SECCIÓN CARGA ---
 if opcion == "📝 Cargar mi Prode":
     if 'enviado' not in st.session_state: st.session_state.enviado = False
-    
     if st.session_state.enviado:
-        st.success("✅ ¡Pronóstico guardado!")
+        st.success("✅ Guardado.")
         if st.button("Cargar otro"): 
             st.session_state.enviado = False
             st.rerun()
         st.stop()
-
+    
     nombre = st.text_input("👤 TU NOMBRE COMPLETO:").strip().upper()
     if nombre:
         tabs = st.tabs(["⚽ Grupos", "🏅 Podio", "💎 Bonus"])
@@ -119,44 +129,41 @@ if opcion == "📝 Cargar mi Prode":
                 p3 = st.selectbox("🥉 Tercero", equipos_podio, index=2)
                 p4 = st.selectbox("🏅 Cuarto", equipos_podio, index=3)
             with tabs[2]:
-                b1 = st.text_input("Último gol ARG grupos:")
-                b2 = st.text_input("Primer gol Octavos Ganador J:")
+                b1 = st.text_input("Último gol ARG:")
+                b2 = st.text_input("Primer gol Octavos:")
 
-            if st.form_submit_button("💾 GUARDAR PRODE"):
-                nombres_ya_estan = ws_pronos.col_values(1)
-                if nombre in [n.upper() for n in nombres_ya_estan]:
-                    st.error("❌ Ya registraste tu Prode.")
+            if st.form_submit_button("💾 GUARDAR"):
+                col1 = ws_pronos.col_values(1)
+                if nombre in [n.upper() for n in col1]:
+                    st.error("Ya participaste.")
                 else:
                     ahora = datetime.now().strftime("%d/%m/%Y %H:%M")
-                    # Agregar podio/bonus y mandar todo
-                    datos.extend([[nombre, "P1", p1, ""], [nombre, "P2", p2, ""], [nombre, "P3", p3, ""], [nombre, "P4", p4, ""], [nombre, "B1", b1, ""], [nombre, "B2", b2, ""]])
+                    datos.extend([[nombre,"P1",p1,""],[nombre,"P2",p2,""],[nombre,"P3",p3,""],[nombre,"P4",p4,""],[nombre,"B1",b1,""],[nombre,"B2",b2,""]])
                     ws_pronos.append_rows([f + [ahora] for f in datos])
                     st.session_state.enviado = True
                     st.rerun()
 
-# --- SECCIÓN RANKING ---
 elif opcion == "📊 Ranking en Vivo":
-    st.header("🏆 Tabla de Posiciones")
+    st.header("🏆 Posiciones")
     res = obtener_ranking()
-    if res is not None:
-        st.dataframe(res, use_container_width=True, hide_index=True)
+    if isinstance(res, pd.DataFrame):
+        st.dataframe(res, hide_index=True, use_container_width=True)
+    elif res is None:
+        st.info("Esperando resultados del admin.")
     else:
-        st.info("El administrador aún no cargó resultados reales.")
+        st.error(res)
 
-# --- SECCIÓN ADMIN ---
 elif opcion == "⚙️ Admin":
-    st.header("Panel Administrador")
+    st.header("Admin")
     pw = st.text_input("Clave:", type="password")
     if pw == "DUNLOP2026":
-        st.write("Cargar Resultado Oficial:")
-        todos_los_partidos = []
+        partidos = []
         for g in fixture_datos.values():
-            for p in g: todos_los_partidos.append(f"{p['L']} vs {p['V']}")
-        
-        p_real = st.selectbox("Elegí el partido:", todos_los_partidos)
+            for p in g: partidos.append(f"{p['L']} vs {p['V']}")
+        sel = st.selectbox("Partido:", partidos)
         c1, c2 = st.columns(2)
-        gl_r = c1.number_input("Goles Local", 0, 15)
-        gv_r = c2.number_input("Goles Visitante", 0, 15)
-        if st.button("Actualizar Resultado"):
-            ws_reales.append_row([p_real, gl_r, gv_r])
-            st.success("¡Cargado! El ranking se actualizará automáticamente.")
+        rl = c1.number_input("Local", 0, 15)
+        rv = c2.number_input("Visitante", 0, 15)
+        if st.button("Guardar"):
+            ws_reales.append_row([sel, rl, rv])
+            st.success("Ok.")
