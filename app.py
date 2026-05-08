@@ -18,21 +18,21 @@ def conectar():
 
 ws_p, ws_r = conectar()
 
-# --- EL FIXTURE COMPLETO (COMPACTO) ---
-partidos = [
-    "México vs Sudáfrica","Corea Sur vs Rep. Checa","México vs Corea Sur","Rep. Checa vs Sudáfrica","Sudáfrica vs Corea Sur","Rep. Checa vs México",
-    "Canadá vs Bosnia","Catar vs Suiza","Canadá vs Catar","Suiza vs Bosnia","Bosnia vs Catar","Suiza vs Canadá",
-    "Brasil vs Marruecos","Haití vs Escocia","Brasil vs Haití","Escocia vs Marruecos","Marruecos vs Haití","Escocia vs Brasil",
-    "EE. UU. vs Paraguay","Australia vs Turquía","EE. UU. vs Australia","Turquía vs Paraguay","Paraguay vs Australia","Turquía vs EE. UU.",
-    "Alemania vs Curazao","C. Marfil vs Ecuador","Alemania vs C. Marfil","Ecuador vs Curazao","Curazao vs C. Marfil","Ecuador vs Alemania",
-    "P. Bajos vs Japón","Suecia vs Túnez","P. Bajos vs Suecia","Túnez vs Japón","Japón vs Suecia","Túnez vs P. Bajos",
-    "Bélgica vs Egipto","Irán vs N. Zelanda","Bélgica vs Irán","N. Zelanda vs Egipto","Egipto vs Irán","N. Zelanda vs Bélgica",
-    "España vs Cabo Verde","Uruguay vs A. Saudí","España vs Uruguay","A. Saudí vs Cabo Verde","Cabo Verde vs Uruguay","A. Saudí vs España",
-    "Francia vs Senegal","Irak vs Noruega","Francia vs Irak","Noruega vs Senegal","Senegal vs Irak","Noruega vs Francia",
-    "Argentina vs Argelia","Austria vs Jordania","Argentina vs Austria","Jordania vs Argelia","Argelia vs Austria","Jordania vs Argentina",
-    "Portugal vs RD Congo","Uzbekistán vs Colombia","Portugal vs Uzbekistán","Colombia vs RD Congo","RD Congo vs Uzbekistán","Colombia vs Portugal",
-    "Inglaterra vs Croacia","Ghana vs Panamá","Inglaterra vs Ghana","Panamá vs Croacia","Croacia vs Ghana","Panamá vs Inglaterra"
-]
+# --- FIXTURE ORGANIZADO POR GRUPOS ---
+fixture = {
+    "A": ["México vs Sudáfrica","Corea Sur vs Rep. Checa","México vs Corea Sur","Rep. Checa vs Sudáfrica","Sudáfrica vs Corea Sur","Rep. Checa vs México"],
+    "B": ["Canadá vs Bosnia","Catar vs Suiza","Canadá vs Catar","Suiza vs Bosnia","Bosnia vs Catar","Suiza vs Canadá"],
+    "C": ["Brasil vs Marruecos","Haití vs Escocia","Brasil vs Haití","Escocia vs Marruecos","Marruecos vs Haití","Escocia vs Brasil"],
+    "D": ["EE. UU. vs Paraguay","Australia vs Turquía","EE. UU. vs Australia","Turquía vs Paraguay","Paraguay vs Australia","Turquía vs EE. UU."],
+    "E": ["Alemania vs Curazao","C. Marfil vs Ecuador","Alemania vs C. Marfil","Ecuador vs Curazao","Curazao vs C. Marfil","Ecuador vs Alemania"],
+    "F": ["P. Bajos vs Japón","Suecia vs Túnez","P. Bajos vs Suecia","Túnez vs Japón","Japón vs Suecia","Túnez vs P. Bajos"],
+    "G": ["Bélgica vs Egipto","Irán vs N. Zelanda","Bélgica vs Irán","N. Zelanda vs Egipto","Egipto vs Irán","N. Zelanda vs Bélgica"],
+    "H": ["España vs Cabo Verde","Uruguay vs A. Saudí","España vs Uruguay","A. Saudí vs Cabo Verde","Cabo Verde vs Uruguay","A. Saudí vs España"],
+    "I": ["Francia vs Senegal","Irak vs Noruega","Francia vs Irak","Noruega vs Senegal","Senegal vs Irak","Noruega vs Francia"],
+    "J": ["Argentina vs Argelia","Austria vs Jordania","Argentina vs Austria","Jordania vs Argelia","Argelia vs Austria","Jordania vs Argentina"],
+    "K": ["Portugal vs RD Congo","Uzbekistán vs Colombia","Portugal vs Uzbekistán","Colombia vs RD Congo","RD Congo vs Uzbekistán","Colombia vs Portugal"],
+    "L": ["Inglaterra vs Croacia","Ghana vs Panamá","Inglaterra vs Ghana","Panamá vs Croacia","Croacia vs Ghana","Panamá vs Inglaterra"]
+}
 equipos_podio = sorted(["Argentina", "Brasil", "México", "España", "Francia", "Alemania", "Inglaterra", "Uruguay", "Portugal", "P. Bajos", "Bélgica", "Italia", "EE. UU.", "Marruecos", "Colombia", "Ecuador"])
 
 # --- LÓGICA RANKING ---
@@ -67,24 +67,29 @@ if opc == "📝 Cargar Prode":
     if nom:
         with st.form("f"):
             res = []
-            st.subheader("⚽ Fase de Grupos")
-            for p in partidos:
-                c1, c2, c3, c4, c5 = st.columns([3, 1, 0.5, 1, 3])
-                eqs = p.split(" vs ")
-                with c1: st.write(f"**{eqs[0]}**")
-                with c2: gl = st.number_input("G", 0, 15, key=f"l_{p}", label_visibility="collapsed")
-                with c3: st.write("v")
-                with c4: gv = st.number_input("G", 0, 15, key=f"v_{p}", label_visibility="collapsed")
-                with c5: st.write(f"**{eqs[1]}**")
-                res.append([nom, p, gl, gv])
+            st.subheader("⚽ Pronósticos por Grupo")
+            tabs = st.tabs([f"Grup {k}" for k in fixture.keys()])
+            
+            for i, (letra, lista_p) in enumerate(fixture.items()):
+                with tabs[i]:
+                    for p in lista_p:
+                        c1, c2, c3, c4, c5 = st.columns([3, 1, 0.5, 1, 3])
+                        eqs = p.split(" vs ")
+                        with c1: st.write(f"**{eqs[0]}**")
+                        with c2: gl = st.number_input("G", 0, 15, key=f"l_{p}", label_visibility="collapsed")
+                        with c3: st.write("v")
+                        with c4: gv = st.number_input("G", 0, 15, key=f"v_{p}", label_visibility="collapsed")
+                        with c5: st.write(f"**{eqs[1]}**")
+                        res.append([nom, p, gl, gv])
             
             st.divider()
+            st.subheader("🏅 Podio y Bonus Final")
             c_f1, c_f2 = st.columns(2)
-            camp = c_f1.selectbox("Campeón:", equipos_podio)
-            bon = c_f2.text_input("Goleador:")
+            camp = c_f1.selectbox("¿Quién será el Campeón?", equipos_podio)
+            bon = c_f2.text_input("Goleador del Torneo:")
             
-            if st.form_submit_button("GUARDAR MI PRODE"):
-                if nom in [n.upper() for n in ws_p.col_values(1)]: st.error("Ya registrado.")
+            if st.form_submit_button("💾 GUARDAR TODO MI PRODE"):
+                if nom in [n.upper() for n in ws_p.col_values(1)]: st.error("❌ Ya registraste tus datos.")
                 else:
                     h = datetime.now().strftime("%d/%m/%Y %H:%M")
                     res.extend([[nom, "CAMP", camp, ""], [nom, "B1", bon, ""]])
@@ -94,14 +99,15 @@ if opc == "📝 Cargar Prode":
 elif opc == "📊 Ranking":
     rk = get_ranking()
     if rk is not None: st.dataframe(rk, use_container_width=True, hide_index=True)
-    else: st.info("Sin resultados.")
+    else: st.info("Sin resultados cargados todavía.")
 
 elif opc == "⚙️ Admin":
     pw = st.text_input("Clave:", type="password")
     if pw == "DUNLOP2026":
         with st.form("ad"):
-            psel = st.selectbox("Partido:", partidos)
+            todos = [p for sub in fixture.values() for p in sub]
+            psel = st.selectbox("Elegí el partido:", sorted(todos))
             c1, c2 = st.columns(2)
-            rl, rv = c1.number_input("L", 0, 15), c2.number_input("V", 0, 15)
-            if st.form_submit_button("OK"):
-                ws_r.append_row([psel, rl, rv]); st.success("Guardado")
+            rl, rv = c1.number_input("Goles Local", 0, 15), c2.number_input("Goles Visitante", 0, 15)
+            if st.form_submit_button("ACTUALIZAR RESULTADO OFICIAL"):
+                ws_r.append_row([psel, rl, rv]); st.success("¡Resultado oficial guardado!")
