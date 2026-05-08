@@ -6,61 +6,30 @@ from datetime import datetime
 import json
 
 # --- CONFIGURACIÓN DE PÁGINA ---
-st.set_page_config(page_title="PRODE DUNLOP 2026", page_icon="🏆", layout="wide")
+# Esto ayuda a que se adapte mejor a cualquier pantalla
+st.set_page_config(page_title="DUNLOP PRODE 2026", page_icon="🏆")
 
-# --- DISEÑO A MEDIDA (CSS) ---
+# --- ESTILO LIMPIO Y PROFESIONAL ---
 st.markdown("""
     <style>
-    /* Ocultar elementos de Streamlit */
-    #MainMenu {visibility: hidden;}
-    header {visibility: hidden;}
-    footer {visibility: hidden;}
+    /* Ocultar elementos innecesarios */
     .stDeployButton {display:none;}
-
-    /* Fondo de la App */
-    .stApp {
-        background-color: #ffffff;
-    }
-
-    /* Títulos en Negro Dunlop */
-    h1, h2, h3 {
-        color: #000000 !important;
-        font-family: 'Arial Black', gadget, sans-serif;
-    }
-
-    /* BOTÓN AMARILLO DUNLOP - GRANDE PARA CELULAR */
+    footer {visibility: hidden;}
+    
+    /* Botón Principal Dunlop */
     div.stButton > button:first-child {
         background-color: #FFD200 !important;
-        color: #000000 !important;
-        border: 2px solid #000000;
-        border-radius: 15px;
-        padding: 20px;
-        font-size: 22px !important;
-        font-weight: bold;
-        width: 100%;
-        margin-top: 20px;
-        text-transform: uppercase;
-    }
-
-    /* Estilo de las pestañas (Tabs) */
-    .stTabs [data-baseweb="tab-list"] {
-        background-color: #000000;
-        border-radius: 10px;
-        padding: 5px;
-    }
-    .stTabs [data-baseweb="tab"] {
-        color: #ffffff;
-        font-weight: bold;
-    }
-    .stTabs [aria-selected="true"] {
-        background-color: #FFD200 !important;
-        color: #000000 !important;
-    }
-
-    /* Inputs de goles más grandes */
-    input {
-        font-size: 20px !important;
+        color: black !important;
         font-weight: bold !important;
+        border: 1px solid black !important;
+        height: 3em !important;
+        width: 100% !important;
+    }
+    
+    /* Pestañas más legibles */
+    .stTabs [data-baseweb="tab"] {
+        padding-left: 10px !important;
+        padding-right: 10px !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -75,7 +44,7 @@ def conectar():
 
 ws_p, ws_r = conectar()
 
-# --- FIXTURE ---
+# --- FIXTURE (Lista Compacta) ---
 fixture = {
     "A": ["México vs Sudáfrica","Corea Sur vs Rep. Checa","México vs Corea Sur","Rep. Checa vs Sudáfrica","Sudáfrica vs Corea Sur","Rep. Checa vs México"],
     "B": ["Canadá vs Bosnia","Catar vs Suiza","Canadá vs Catar","Suiza vs Bosnia","Bosnia vs Catar","Suiza vs Canadá"],
@@ -83,7 +52,7 @@ fixture = {
     "D": ["EE. UU. vs Paraguay","Australia vs Turquía","EE. UU. vs Australia","Turquía vs Paraguay","Paraguay vs Australia","Turquía vs EE. UU."],
     "E": ["Alemania vs Curazao","C. Marfil vs Ecuador","Alemania vs C. Marfil","Ecuador vs Curazao","Curazao vs C. Marfil","Ecuador vs Alemania"],
     "F": ["P. Bajos vs Japón","Suecia vs Túnez","P. Bajos vs Suecia","Túnez vs Japón","Japón vs Suecia","Túnez vs P. Bajos"],
-    "G": ["Bélgica vs Egipto","Irán vs N. Zelanda","Bélgica vs Irán","Nueva Zelanda vs Egipto","Egipto vs Irán","Nueva Zelanda vs Bélgica"],
+    "G": ["Bélgica vs Egipto","Irán vs N. Zelanda","Bélgica vs Irán","N. Zelanda vs Egipto","Egipto vs Irán","N. Zelanda vs Bélgica"],
     "H": ["España vs Cabo Verde","Uruguay vs A. Saudí","España vs Uruguay","A. Saudí vs Cabo Verde","Cabo Verde vs Uruguay","A. Saudí vs España"],
     "I": ["Francia vs Senegal","Irak vs Noruega","Francia vs Irak","Noruega vs Senegal","Senegal vs Irak","Noruega vs Francia"],
     "J": ["Argentina vs Argelia","Austria vs Jordania","Argentina vs Austria","Jordania vs Argelia","Argelia vs Austria","Jordania vs Argentina"],
@@ -91,13 +60,6 @@ fixture = {
     "L": ["Inglaterra vs Croacia","Ghana vs Panamá","Inglaterra vs Ghana","Panamá vs Croacia","Croacia vs Ghana","Panamá vs Inglaterra"]
 }
 equipos = sorted(["Argentina", "Brasil", "México", "España", "Francia", "Alemania", "Inglaterra", "Uruguay", "Portugal", "P. Bajos", "Bélgica", "Italia", "EE. UU.", "Marruecos", "Colombia", "Ecuador"])
-
-# --- MENU LATERAL CON LOGO ---
-with st.sidebar:
-    # Logo de Dunlop (URL directa de alta disponibilidad)
-    st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/Dunlop_Logo.svg/1200px-Dunlop_Logo.svg.png", use_container_width=True)
-    st.markdown("<h2 style='text-align: center;'>PRODE 2026</h2>", unsafe_allow_html=True)
-    opc = st.radio("IR A:", ["📝 CARGAR MI PRODE", "📊 RANKING", "🔍 VER OTROS", "⚙️ ADMIN"])
 
 # --- LÓGICA RANKING ---
 def get_ranking():
@@ -119,92 +81,82 @@ def get_ranking():
         return dfm.groupby('Nombre')['Pts'].sum().reset_index().sort_values('Pts', ascending=False)
     except: return None
 
+# --- MENÚ ---
+st.sidebar.image("https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/Dunlop_Logo.svg/500px-Dunlop_Logo.svg.png", width=150)
+opc = st.sidebar.selectbox("MENÚ", ["📝 Cargar Prode", "📊 Ranking", "🔍 Ver Otros", "⚙️ Admin"])
+
 # --- SECCIONES ---
-if opc == "📝 CARGAR MI PRODE":
-    st.write("### 👤 REGISTRO DE PRONÓSTICO")
-    
-    if st.session_state.get('bloqueo'):
-        st.success("🏆 ¡LISTO! TU PRODE FUE ENVIADO.")
+if opc == "📝 Cargar Prode":
+    st.header("🏆 Mi Pronóstico 2026")
+    if st.session_state.get('ok'):
+        st.success("✅ Guardado correctamente.")
         st.stop()
-        
-    nom = st.text_input("ESCRIBÍ TU NOMBRE Y APELLIDO:").upper().strip()
     
+    nom = st.text_input("Tu Nombre Completo:").upper().strip()
     if nom:
-        with st.form("prode_form"):
-            t1, t2, t3 = st.tabs(["⚽ GRUPOS", "🏅 MI PODIO", "💎 BONUS"])
-            
-            with t1:
-                st.info("Completá los goles de cada partido:")
-                stbs = st.tabs(list(fixture.keys()))
-                res = []
-                for i, letra in enumerate(fixture.keys()):
-                    with stbs[i]:
-                        for p in fixture[letra]:
-                            c1, c2, c3, c4, c5 = st.columns([3, 1, 0.5, 1, 3])
+        with st.form("f"):
+            t_g, t_p, t_b = st.tabs(["⚽ GRUPOS", "🏅 PODIO", "💎 BONUS"])
+            res = []
+            with t_g:
+                st_g = st.tabs(list(fixture.keys()))
+                for i, l in enumerate(fixture.keys()):
+                    with st_g[i]:
+                        for p in fixture[l]:
+                            c1, c2, c3 = st.columns([2, 1, 2])
                             eqs = p.split(" vs ")
                             with c1: st.write(f"**{eqs[0]}**")
-                            with c2: gl = st.number_input("G", 0, 15, key=f"l_{p}", label_visibility="collapsed")
-                            with c3: st.write("-")
-                            with c4: gv = st.number_input("G", 0, 15, key=f"v_{p}", label_visibility="collapsed")
-                            with c5: st.write(f"**{eqs[1]}**")
+                            with c2: 
+                                sub_c1, sub_c2 = st.columns(2)
+                                gl = sub_c1.number_input("L", 0, 15, key=f"l_{p}", label_visibility="collapsed")
+                                gv = sub_c2.number_input("V", 0, 15, key=f"v_{p}", label_visibility="collapsed")
+                            with c3: st.write(f"**{eqs[1]}**")
                             res.append([nom, p, gl, gv])
+            with t_p:
+                p1 = st.selectbox("1° - Campeón", equipos, index=0)
+                p2 = st.selectbox("2° - Subcampeón", equipos, index=1)
+                p3 = st.selectbox("3° - Tercero", equipos, index=2)
+                p4 = st.selectbox("4° - Cuarto", equipos, index=3)
+            with t_b:
+                b1 = st.text_input("Último gol ARG grupos:")
+                b2 = st.text_input("Primer gol Ganador J Octavos:")
             
-            with t2:
-                st.write("### ¿Quiénes llegan a la final?")
-                p1 = st.selectbox("🥇 CAMPEÓN", equipos, index=0)
-                p2 = st.selectbox("🥈 SUBCAMPEÓN", equipos, index=1)
-                p3 = st.selectbox("🥉 3° PUESTO", equipos, index=2)
-                p4 = st.selectbox("🏅 4° PUESTO", equipos, index=3)
-            
-            with t3:
-                st.write("### Preguntas Bonus")
-                b1 = st.text_input("¿Quién hace el último gol de ARG en grupos?")
-                b2 = st.text_input("¿Quién hace el primer gol del ganador J en octavos?")
-                
-            if st.form_submit_button("💾 ENVIAR MI PRODE"):
-                if nom in [n.upper() for n in ws_p.col_values(1)]:
-                    st.error("❌ Ya participaste con este nombre.")
+            if st.form_submit_button("GUARDAR PRODE"):
+                if nom in [n.upper() for n in ws_p.col_values(1)]: st.error("Ya participaste.")
                 else:
                     h = datetime.now().strftime("%d/%m/%Y %H:%M")
                     res.extend([[nom,"P1",p1,""],[nom,"P2",p2,""],[nom,"P3",p3,""],[nom,"P4",p4,""],[nom,"B1",b1,""],[nom,"B2",b2,""]])
-                    ws_p.append_rows([fila+[h] for fila in res])
-                    st.session_state.bloqueo = True
-                    st.rerun()
+                    ws_p.append_rows([f+[h] for f in res])
+                    st.session_state.ok = True; st.rerun()
 
-elif opc == "📊 RANKING":
-    st.write("## 🏆 Posiciones en Vivo")
+elif opc == "📊 Ranking":
+    st.header("📊 Posiciones")
     rk = get_ranking()
-    if rk is not None:
-        st.dataframe(rk, use_container_width=True, hide_index=True)
-    else:
-        st.info("Esperando resultados...")
+    if rk is not None: st.dataframe(rk, use_container_width=True, hide_index=True)
+    else: st.info("Sin datos.")
 
-elif opc == "🔍 VER OTROS":
-    st.write("## 🔍 Consultar Prode")
+elif opc == "🔍 Ver Otros":
+    st.header("🔍 Ver Prode de...")
     p_raw = ws_p.get_all_values()
     if len(p_raw) > 1:
-        df_ver = pd.DataFrame(p_raw[1:], columns=['Nombre','Partido','G_L','G_V','Fecha'])
-        per = st.selectbox("Elegí un compañero:", sorted(df_ver['Nombre'].unique()))
+        df_v = pd.DataFrame(p_raw[1:], columns=['Nombre','Partido','GL','GV','F'])
+        per = st.selectbox("Compañero:", sorted(df_v['Nombre'].unique()))
         if per:
-            sub = df_ver[df_ver['Nombre'] == per]
-            st.table(sub[sub['Partido'].str.contains(" vs ")][['Partido','G_L','G_V']])
-            st.table(sub[~sub['Partido'].str.contains(" vs ")][['Partido','G_L']])
+            st.table(df_v[df_v['Nombre'] == per][['Partido','GL','GV']])
+    else: st.info("Vacío.")
 
-elif opc == "⚙️ ADMIN":
+elif opc == "⚙️ Admin":
+    st.header("⚙️ Admin")
     pw = st.text_input("Clave:", type="password")
     if pw == "DUNLOP2026":
-        st.write("### Cargar Resultado Real")
-        allm = [p for s in fixture.values() for p in s]
-        ps = st.selectbox("Partido:", sorted(allm))
-        cl, cv = st.columns(2)
-        rl, rv = cl.number_input("L",0,15), cv.number_input("V",0,15)
-        if st.button("GUARDAR RESULTADO"):
-            filas = ws_r.get_all_values()
-            enc = False
-            for i, fila in enumerate(filas):
-                if fila[0] == ps:
-                    ws_r.update(f'A{i+1}:C{i+1}', [[ps, rl, rv]])
-                    enc = True
-                    break
-            if not enc: ws_r.append_row([ps, rl, rv])
-            st.success("¡Resultado oficial cargado!")
+        with st.form("a"):
+            allm = [p for s in fixture.values() for p in s]
+            ps = st.selectbox("Partido:", sorted(allm))
+            c1, c2 = st.columns(2)
+            rl, rv = c1.number_input("L",0,15), c2.number_input("V",0,15)
+            if st.form_submit_button("GUARDAR"):
+                filas = ws_r.get_all_values()
+                enc = False
+                for i, f in enumerate(filas):
+                    if f[0] == ps: ws_r.update(f'A{i+1}:C{i+1}', [[ps, rl, rv]]); enc = True; break
+                if not enc: ws_r.append_row([ps, rl, rv])
+                st.success("OK")
