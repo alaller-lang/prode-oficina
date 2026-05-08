@@ -65,12 +65,16 @@ def get_ranking():
     except: return None
 
 # --- MENU ---
-opc = st.sidebar.radio("MENÚ", ["📝 Cargar Prode", "📊 Ranking", "⚙️ Admin"])
+opc = st.sidebar.radio("MENÚ", ["📝 Cargar Prode", "📊 Ranking", "🔍 Ver Pronósticos", "⚙️ Admin"])
 
 if opc == "📝 Cargar Prode":
-    if 'ok' not in st.session_state: st.session_state.ok = False
-    if st.session_state.ok:
-        st.success("✅ ¡Pronóstico guardado!"); st.button("Cargar otro", on_click=lambda: st.session_state.update({'ok':False})); st.stop()
+    if 'bloqueo' not in st.session_state: st.session_state.bloqueo = False
+    
+    if st.session_state.bloqueo:
+        st.success("🎉 ¡Tu pronóstico ha sido enviado con éxito! Ya estás participando.")
+        st.info("No puedes cargar más de un prode desde el mismo navegador.")
+        st.stop()
+        
     nom = st.text_input("NOMBRE COMPLETO:").upper().strip()
     if nom:
         with st.form("f"):
@@ -99,18 +103,42 @@ if opc == "📝 Cargar Prode":
                 b2 = st.text_input("¿Quién hace el PRIMER GOL del ganador del Grupo J en Octavos?")
             if st.form_submit_button("💾 GUARDAR TODO"):
                 registrados = ws_p.col_values(1)
-                if nom in [n.upper() for n in registrados]: st.error("❌ Ya participaste.")
+                if nom in [n.upper() for n in registrados]: st.error("❌ Este nombre ya ha participado.")
                 else:
                     h = datetime.now().strftime("%d/%m/%Y %H:%M")
                     res.extend([[nom,"P1",p1,""],[nom,"P2",p2,""],[nom,"P3",p3,""],[nom,"P4",p4,""],[nom,"B1",b1,""],[nom,"B2",b2,""]])
                     ws_p.append_rows([fila+[h] for fila in res])
-                    st.session_state.ok = True; st.rerun()
+                    st.session_state.bloqueo = True
+                    st.rerun()
 
 elif opc == "📊 Ranking":
     st.header("🏆 Tabla de Posiciones")
     rk = get_ranking()
     if rk is not None: st.dataframe(rk, use_container_width=True, hide_index=True)
     else: st.info("Sin resultados aún.")
+
+elif opc == "🔍 Ver Pronósticos":
+    st.header("🔍 Consultar Pronóstico de un Compañero")
+    p_raw = ws_p.get_all_values()
+    if len(p_raw) > 1:
+        df_ver = pd.DataFrame(p_raw[1:], columns=['Nombre','Partido','G_L','G_V','Fecha'])
+        lista_nombres = sorted(df_ver['Nombre'].unique())
+        persona = st.selectbox("Selecciona a quién quieres ver:", lista_nombres)
+        if persona:
+            sub_df = df_ver[df_ver['Nombre'] == persona]
+            # Separamos partidos de podios/bonus
+            partidos_df = sub_df[sub_df['Partido'].str.contains(" vs ")]
+            otros_df = sub_df[~sub_df['Partido'].str.contains(" vs ")]
+            
+            c_v1, c_v2 = st.columns([2, 1])
+            with c_v1:
+                st.write(f"### Partidos de {persona}")
+                st.table(partidos_df[['Partido', 'G_L', 'G_V']])
+            with c_v2:
+                st.write("### Podio y Bonus")
+                st.table(otros_df[['Partido', 'G_L']])
+    else:
+        st.info("Todavía nadie cargó su prode.")
 
 elif opc == "⚙️ Admin":
     st.header("⚙️ Panel de Control")
@@ -121,8 +149,8 @@ elif opc == "⚙️ Admin":
             with st.form("a1"):
                 allm = [p for s in fixture.values() for p in s]
                 ps = st.selectbox("Elegí el Partido:", sorted(allm))
-                c1, c2 = st.columns(2)
-                rl, rv = c1.number_input("Local", 0, 15), c2.number_input("Visitante", 0, 15)
+                cl, cv = st.columns(2)
+                rl, rv = cl.number_input("Local", 0, 15), c2.number_input("Visitante", 0, 15)
                 if st.form_submit_button("ACTUALIZAR RESULTADO"):
                     filas = ws_r.get_all_values()
                     encontrado = False
